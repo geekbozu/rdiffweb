@@ -45,6 +45,7 @@ import zlib
 from rdiffweb import rdw_helpers
 from rdiffweb.archiver import archive, ARCHIVERS
 from rdiffweb.rdw_config import Configuration
+from rdiffweb.rdw_helpers import memoized_property
 
 
 try:
@@ -530,18 +531,17 @@ class RdiffRepo(object):
         # Check if the repository has hint for rdiffweb.
         self._load_hints()
 
-    @property
+    @memoized_property
     def backup_dates(self):
         """Return a list of dates when backup was executed. This list is
         sorted from old to new (ascending order). To identify dates,
         'mirror_metadata' file located in rdiff-backup-data are used."""
-        if not hasattr(self, '_backup_dates'):
-            logger.debug("get backup dates for [%r]", self.repo_root)
-            self._backup_dates = sorted([
-                IncrementEntry.extract_date(x)
-                for x in self.data_entries
-                if x.startswith(b"mirror_metadata")])
-        return self._backup_dates
+
+        logger.debug("get backup dates for [%r]", self.repo_root)
+        return sorted([
+            IncrementEntry.extract_date(x)
+            for x in self.data_entries
+            if x.startswith(b"mirror_metadata")])
 
     def _check(self):
         """Check if the repository exists."""
@@ -578,25 +578,21 @@ class RdiffRepo(object):
         assert isinstance(value, bytes)
         return self.encoding.decode(value, errors)[0]
 
-    @property
+    @memoized_property
     def _error_logs(self):
         """Return dict of {date: IncrementEntry} to represent each file statistics."""
-        if not hasattr(self, '_error_logs_data'):
-            self._error_logs_data = {
-                IncrementEntry.extract_date(x): IncrementEntry(self.root_path, x)
-                for x in self.data_entries
-                if x.startswith(b"error_log.")}
-        return self._error_logs_data
+        return {
+            IncrementEntry.extract_date(x): IncrementEntry(self.root_path, x)
+            for x in self.data_entries
+            if x.startswith(b"error_log.")}
 
-    @property
+    @memoized_property
     def _file_statistics(self):
         """Return dict of {date: filename} to represent each file statistics."""
-        if not hasattr(self, '_file_statistics_data'):
-            self._file_statistics_data = {
-                IncrementEntry.extract_date(x): x
-                for x in self.data_entries
-                if x.startswith(b"file_statistics.")}
-        return self._file_statistics_data
+        return {
+            IncrementEntry.extract_date(x): x
+            for x in self.data_entries
+            if x.startswith(b"file_statistics.")}
 
     def get_encoding(self):
         """
@@ -727,17 +723,15 @@ class RdiffRepo(object):
             encodings.search_function(FS_ENCODING)
         assert self.encoding
 
-    @property
+    @memoized_property
     def session_statistics(self):
         """Return list of IncrementEntry to represent each sessions
         statistics."""
-        if not hasattr(self, '_session_statistics_data'):
-            data = (
-                SessionStatisticsEntry(self.root_path, x)
-                for x in sorted(self.data_entries)
-                if x.startswith(b"session_statistics."))
-            self._session_statistics_data = OrderedDict([(x.date, x) for x in data])
-        return self._session_statistics_data
+        data = (
+            SessionStatisticsEntry(self.root_path, x)
+            for x in sorted(self.data_entries)
+            if x.startswith(b"session_statistics."))
+        return OrderedDict([(x.date, x) for x in data])
 
     def set_encoding(self, name):
         """
