@@ -43,3 +43,5 @@ nosetests.xml
 /sonar-project.properties
 .tox
 .pydevproject
+/deb_dist/
+/rdiffweb-*.tar.gz

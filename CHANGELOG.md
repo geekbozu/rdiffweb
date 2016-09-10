@@ -1,5 +1,6 @@
 # Latest
 
+* Add debian package #29
 * Enhance NotificationPlugin to send email when user change his email address.
 * Add a `limit` parameter to history page. Fix #7
 * Force URL encoding ISO-8859-1 in py3 and cherrypy >= 5.5.0
