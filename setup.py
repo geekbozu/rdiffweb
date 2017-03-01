@@ -263,6 +263,7 @@ setup(
             "DeleteRepo = rdiffweb.plugins.delete_repo",
             "RemoveOlder = rdiffweb.plugins.remove_older",
             "SetEncoding = rdiffweb.plugins.set_encoding",
+            "Api = rdiffweb.plugins.api",
         ]
     },
     # new commands added and build command modified
