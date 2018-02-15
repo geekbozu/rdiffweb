@@ -78,7 +78,7 @@ node {
         // Publish to pypi
         docker.image("ikus060/docker-debian-py2-py3:jessie").inside {
             withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ikus060-pypi', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-                writeFile file: "~/.pypirc", text: """
+                writeFile file: "/root/.pypirc", text: """
                     [distutils]
                     index-servers =
                       pypi
