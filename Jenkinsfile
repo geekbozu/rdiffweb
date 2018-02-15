@@ -80,20 +80,20 @@ node {
             withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ikus060-pypi', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                 sh """
                 cat > ~/.pypirc << EOF
-                  [distutils]
-                  index-servers =
-                    pypi
-                    pypitest
-                    
-                  [pypi]
-                  username=${USERNAME}
-                  password=${PASSWORD}
-                    
-                  [pypitest]
-                  repository=https://test.pypi.org/legacy/
-                  username=${USERNAME}
-                  password=${PASSWORD}
-                EOF
+[distutils]
+index-servers =
+  pypi
+  pypitest
+
+[pypi]
+username=${USERNAME}
+password=${PASSWORD}
+    
+[pypitest]
+repository=https://test.pypi.org/legacy/
+username=${USERNAME}
+password=${PASSWORD}
+EOF
                 """
                 writeFile file: "/root/.pypirc", text: """
 
