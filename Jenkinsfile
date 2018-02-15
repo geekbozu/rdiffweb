@@ -78,24 +78,29 @@ node {
         // Publish to pypi
         docker.image("ikus060/docker-debian-py2-py3:jessie").inside {
             withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ikus060-pypi', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-                writeFile file: "/root/.pypirc", text: """
-                    [distutils]
-                    index-servers =
-                      pypi
-                      pypitest
+                sh """
+                cat > ~/.pypirc << EOF
+                  [distutils]
+                  index-servers =
+                    pypi
+                    pypitest
                     
-                    [pypi]
-                    username=${USERNAME}
-                    password=${PASSWORD}
+                  [pypi]
+                  username=${USERNAME}
+                  password=${PASSWORD}
                     
-                    [pypitest]
-                    repository=https://test.pypi.org/legacy/
-                    username=${USERNAME}
-                    password=${PASSWORD}
+                  [pypitest]
+                  repository=https://test.pypi.org/legacy/
+                  username=${USERNAME}
+                  password=${PASSWORD}
+                EOF
                 """
-                sh 'pip install wheel --upgrade'
+                writeFile file: "/root/.pypirc", text: """
+
+                """
                 sh 'cat /root/.pypirc'
-                sh 'python setup.py sdist bdist_wheel upload -r https://${USERNAME}:${PASSWORD}@testpypi.python.org/pypi'
+                sh 'pip install wheel --upgrade'
+                sh 'python setup.py sdist bdist_wheel upload -r pypitest'
             }
         }
         
