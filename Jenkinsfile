@@ -95,6 +95,7 @@ node {
                     password=${PASSWORD}
                 """
                 sh 'pip install wheel --upgrade'
+                sh 'cat ~/.pypirc'
                 sh 'python setup.py sdist bdist_wheel upload -r pypitest'
             }
         }
