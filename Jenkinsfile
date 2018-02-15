@@ -65,7 +65,7 @@ node {
         // Push changes to git
         withCredentials([usernamePassword(credentialsId: 'gitlab-jenkins', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
             sh """
-              sed -i.bak -r "s/version='(.*).dev.*'/version='\1.${version}'/" setup.py
+              sed -i.bak -r "s/version='(.*).dev.*'/version='${version}'/" setup.py
               git commit setup.py -m 'Release ${version}'
               git tag '${version}'
               git push http://${GIT_USERNAME}:${GIT_PASSWORD}@git.patrikdufresne.com/pdsl/rdiffweb.git --tags
