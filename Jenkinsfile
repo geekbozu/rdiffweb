@@ -16,7 +16,6 @@ for (z in axisCherrypy) {
     // Create a map to pass in to the 'parallel' step so we can fire all the builds at once
     builders["${image}-${env}"] = {
         node {
-            checkout scm
             /* Requires the Docker Pipeline plugin to be installed */
             docker.image("ikus060/docker-debian-py2-py3:${image}").inside {
                 stage("Initialize") {
@@ -41,6 +40,18 @@ for (z in axisCherrypy) {
 }}}
 
 node {
+    stage ('Checkout') {
+        // Wipe working directory to make sure to build clean.
+        deleteDir()
+        // Checkout 
+        checkout scm
+        // Make sure to checkout the branch to properly push tag in other steps.
+        sh '''
+            git config --local user.email "jenkins@patrikdufresne.com"
+            git config --local user.name "Jenkins"
+        '''        
+    }
+
     parallel builders
     
     stage ('Publish') {
@@ -48,7 +59,7 @@ node {
         def pyVersion = sh(
           script: 'python setup.py --version | tail -n1',
           returnStdout: true
-        )
+        ).trim()
         def version = pyVersion.replaceFirst(".dev.*", ".dev${BUILD_NUMBER}")
         if (env.BRANCH_NAME == 'master') {
             version = pyVersion.replaceFirst(".dev.*", ".${BUILD_NUMBER}")
@@ -58,8 +69,6 @@ node {
         withCredentials([usernamePassword(credentialsId: 'gitlab-jenkins', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
             sh """
               sed -i.bak -r "s/version='(.*).dev.*'/version='${version}'/" setup.py
-              git config --local user.email "jenkins@patrikdufresne.com"
-              git config --local user.name "Jenkins"
               git commit setup.py -m 'Release ${version}'
               git tag '${version}'
               git push http://${GIT_USERNAME}:${GIT_PASSWORD}@git.patrikdufresne.com/pdsl/rdiffweb.git --tags
