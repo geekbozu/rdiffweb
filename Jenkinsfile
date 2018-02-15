@@ -23,7 +23,7 @@ for (z in axisCherrypy) {
                     sh 'ln -snf /usr/share/zoneinfo/America/Montreal /etc/localtime && echo "America/Montreal" > /etc/timezone'
                     echo 'Upgrade python and install dependencies to avoid compiling from sources.'
                     sh 'apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup'
-                    sh 'pip install pip setuptools wheel tox --upgrade'
+                    sh 'pip install pip setuptools tox --upgrade'
                     echo 'Compile catalog to make the test pass'
                     sh 'python setup.py compile_all_catalogs'
                 }
@@ -76,24 +76,27 @@ node {
         }
         
         // Publish to pypi
-        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ikus060-pypi', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-            writeFile file: "~/pypirc", text: """
-                [distutils]
-                index-servers =
-                  pypi
-                  pypitest
-                
-                [pypi]
-                repository=https://pypi.python.org/pypi
-                username=${USERNAME}
-                password=${PASSWORD}
-                
-                [pypitest]
-                repository=https://testpypi.python.org/pypi
-                username=${USERNAME}
-                password=${PASSWORD}
-            """
-            sh 'python setup.py sdist bdist_wheel upload -r pypitest'
+        docker.image("ikus060/docker-debian-py2-py3:${image}").inside {
+            withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ikus060-pypi', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+                writeFile file: "~/.pypirc", text: """
+                    [distutils]
+                    index-servers =
+                      pypi
+                      pypitest
+                    
+                    [pypi]
+                    repository=https://pypi.python.org/pypi
+                    username=${USERNAME}
+                    password=${PASSWORD}
+                    
+                    [pypitest]
+                    repository=https://testpypi.python.org/pypi
+                    username=${USERNAME}
+                    password=${PASSWORD}
+                """
+                sh 'pip install wheel --upgrade'
+                sh 'python setup.py sdist bdist_wheel upload -r pypitest'
+            }
         }
         
     }
