@@ -44,20 +44,12 @@ node {
     parallel builders
     
     stage ('Publish') {
-        // Make sure to checkout the branch to properly push tag in other steps.
-        sh '''
-          git branch -D "${BRANCH_NAME}" || echo
-          git checkout "${BRANCH_NAME}"
-          git config --local user.email "jenkins@patrikdufresne.com"
-          git config --local user.name "Jenkins"
-        '''
-        
         // Define version
         def pyVersion = sh(
           script: 'python setup.py --version | tail -n1',
           returnStdout: true
         ).trim()
-        def version = pyVersion.replaceFirst(".dev.*", "-dev${BUILD_NUMBER}")
+        def version = pyVersion.replaceFirst(".dev.*", ".dev${BUILD_NUMBER}")
         if (env.BRANCH_NAME == 'master') {
             version = pyVersion.replaceFirst(".dev.*", ".${BUILD_NUMBER}")
         }
@@ -66,6 +58,8 @@ node {
         withCredentials([usernamePassword(credentialsId: 'gitlab-jenkins', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
             sh """
               sed -i.bak -r "s/version='(.*).dev.*'/version='${version}'/" setup.py
+              git config --local user.email "jenkins@patrikdufresne.com"
+              git config --local user.name "Jenkins"
               git commit setup.py -m 'Release ${version}'
               git tag '${version}'
               git push http://${GIT_USERNAME}:${GIT_PASSWORD}@git.patrikdufresne.com/pdsl/rdiffweb.git --tags
