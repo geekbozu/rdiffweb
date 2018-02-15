@@ -48,7 +48,7 @@ node {
         def pyVersion = sh(
           script: 'python setup.py --version | tail -n1',
           returnStdout: true
-        ).trim()
+        )
         def version = pyVersion.replaceFirst(".dev.*", ".dev${BUILD_NUMBER}")
         if (env.BRANCH_NAME == 'master') {
             version = pyVersion.replaceFirst(".dev.*", ".${BUILD_NUMBER}")
