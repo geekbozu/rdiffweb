@@ -48,6 +48,8 @@ node {
         sh '''
           git branch -D "${BRANCH_NAME}" || echo
           git checkout "${BRANCH_NAME}"
+          git config --local user.email "jenkins@patrikdufresne.com"
+          git config --local user.name "Jenkins"
         '''
         
         // Define version
@@ -61,12 +63,14 @@ node {
         }
         
         // Push changes to git
-        sh """
-          sed -i.bak -r "s/version='(.*).dev.*'/version='\1.${version}'/" setup.py
-          git commit setup.py -m 'Release ${version}'
-          git tag '${version}'
-          git push --tags
-        """
+        withCredentials([usernamePassword(credentialsId: 'gitlab-jenkins', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+            sh """
+              sed -i.bak -r "s/version='(.*).dev.*'/version='\1.${version}'/" setup.py
+              git commit setup.py -m 'Release ${version}'
+              git tag '${version}'
+              git push --tags
+            """
+        }
         
         // Publish to pypi
         withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'ikus060-pypi', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
