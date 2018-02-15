@@ -100,7 +100,11 @@ EOF
                 """
                 sh 'cat /root/.pypirc'
                 sh 'pip install wheel --upgrade'
-                sh 'python setup.py sdist bdist_wheel upload -r pypitest'
+                if (env.BRANCH_NAME == 'master') {
+                    sh 'python setup.py sdist bdist_wheel upload -r pypi'
+                } else {
+                    sh 'python setup.py sdist bdist_wheel upload -r pypitest'
+                }
             }
         }
         
