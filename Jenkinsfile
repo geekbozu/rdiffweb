@@ -23,7 +23,7 @@ for (z in axisCherrypy) {
                     sh 'ln -snf /usr/share/zoneinfo/America/Montreal /etc/localtime && echo "America/Montreal" > /etc/timezone'
                     echo 'Upgrade python and install dependencies to avoid compiling from sources.'
                     sh 'apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup'
-                    sh 'pip install pip setuptools tox --upgrade'
+                    sh 'pip install pip setuptools wheel tox --upgrade'
                     echo 'Compile catalog to make the test pass'
                     sh 'python setup.py compile_all_catalogs'
                 }
