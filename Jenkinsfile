@@ -15,7 +15,7 @@ for (z in axisCherrypy) {
 
     // Create a map to pass in to the 'parallel' step so we can fire all the builds at once
     builders["${image}-${env}"] = {
-        node {
+        node('docker') {
             /* Requires the Docker Pipeline plugin to be installed */
             docker.image("ikus060/docker-debian-py2-py3:${image}").inside {
                 stage("${image}-${env}:Initialize") {
@@ -46,7 +46,7 @@ for (z in axisCherrypy) {
 
 parallel builders
     
-node {
+node('docker') {
     stage ('Publish') {
         if (env.BRANCH_NAME == 'master') {
             // Wipe working directory to make sure to build clean.
