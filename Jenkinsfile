@@ -18,12 +18,10 @@ pipeline {
         stage ('Parallel Test') {
             steps {
                 script {
-                
                     def axisImages = ['jessie', 'stretch']
                     def axisPython = ['py27', 'py3']
                     def axisCherrypy = ['cherrypy14']
                     //def axisCherrypy = ['cherrypy35','cherrypy4','cherrypy5','cherrypy6','cherrypy7','cherrypy8','cherrypy9','cherrypy10','cherrypy11','cherrypy12','cherrypy13','cherrypy14']
-                    
                     
                     def builders = [:]
                     for (x in axisImages) {
@@ -36,49 +34,49 @@ pipeline {
                         def env = "${python}-${cherrypy}"
                     
                         // Create a map to pass in to the 'parallel' step so we can fire all the builds at once
-                        builders["${image}-${env}"] = {
+                        builders["Test ${image}-${env}"] = {
                             node('docker') {
                                 /* Requires the Docker Pipeline plugin to be installed */
                                 docker.image("ikus060/docker-debian-py2-py3:${image}").inside {
-                                    stage("${image}-${env}:Initialize") {
-                                        // Wipe working directory to make sure to build clean.
-                                        deleteDir()
-                                         // Checkout 
-                                        checkout scm
-                                        echo 'Upgrade python and install dependencies to avoid compiling from sources.'
-                                        sh 'apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup node-less'
-                                        sh 'pip install pip setuptools tox --upgrade'
-                                    }
-                                    stage("${image}-${env}:Build") {
-                                        echo 'Compile catalog and less'
-                                        sh 'python setup.py build'
-                                    }
-                                    stage("${image}-${env}:Test") {
-                                        try {
-                                            sh "tox --recreate --workdir /tmp --sitepackages -e ${env}"
-                                        } finally {
-                                            junit "nosetests-${env}.xml"
-                                            stash includes: "coverage-${env}.xml", name: 'coverage'
-                                        }
+                                    // Wipe working directory to make sure to build clean.
+                                    deleteDir() 
+                                    checkout scm
+                                    
+                                    // Upgrade python and install dependencies to avoid compiling from sources.
+                                    sh 'apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup node-less'
+                                    sh 'pip install pip setuptools tox --upgrade'
+                                
+                                    // Compile cataglog
+                                    sh 'python setup.py build'
+                                    
+                                    // Run test
+                                    try {
+                                        sh "tox --recreate --workdir /tmp --sitepackages -e ${env}"
+                                    } finally {
+                                        junit "nosetests-${env}.xml"
+                                        stash includes: "coverage-${env}.xml", name: 'coverage'
                                     }
                                 }
                             }
                         }
                     }}}
-                    
                     parallel builders
                 }
             }
         }
         stage ('Publish Coverage') {
             steps {
-                unstach 'coverage'
+                unstash 'coverage'
                 script {
                     step([$class: 'CoberturaPublisher', coberturaReportFile: "coverage-*.xml"])
                 }
             }
         }
         stage ('Release') {
+            docker {
+                reuseNode true
+                image 'ikus060/docker-debian-py2-py3:jessie'
+            }
             when {
                 environment name: 'Release', value: 'true'
             }
@@ -114,6 +112,10 @@ pipeline {
             }
         }
         stage('Promote') {
+            docker {
+                reuseNode true
+                image 'ikus060/docker-debian-py2-py3:jessie'
+            }
             when {
                 environment name: 'Release', value: 'true'
                 environment name: 'Promote', value: 'true'
