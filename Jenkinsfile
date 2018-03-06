@@ -27,48 +27,57 @@ pipeline {
             }
         }
         stage ('Parallel Test') {
-            parallel {
-                stage('Test on Python2.7') {
-                    agent {
-                        docker {
-                            image 'ikus060/docker-debian-py2-py3:jessie'
+            steps {
+                script {
+                
+                    def axisImages = ['jessie', 'stretch']
+                    def axisPython = ['py27', 'py3']
+                    def axisCherrypy = ['cherrypy14']
+                    //def axisCherrypy = ['cherrypy35','cherrypy4','cherrypy5','cherrypy6','cherrypy7','cherrypy8','cherrypy9','cherrypy10','cherrypy11','cherrypy12','cherrypy13','cherrypy14']
+                    
+                    
+                    def builders = [:]
+                    for (x in axisImages) {
+                    for (y in axisPython) {
+                    for (z in axisCherrypy) {
+                        // Need to bind the label variable before the closure - can't do 'for (label in labels)'
+                        def image = x 
+                        def python = y
+                        def cherrypy = z
+                        def env = "${python}-${cherrypy}"
+                    
+                        // Create a map to pass in to the 'parallel' step so we can fire all the builds at once
+                        builders["${image}-${env}"] = {
+                            node('docker') {
+                                /* Requires the Docker Pipeline plugin to be installed */
+                                docker.image("ikus060/docker-debian-py2-py3:${image}").inside {
+                                    stage("${image}-${env}:Initialize") {
+                                        // Wipe working directory to make sure to build clean.
+                                        deleteDir()
+                                         // Checkout 
+                                        checkout scm
+                                        echo 'Upgrade python and install dependencies to avoid compiling from sources.'
+                                        sh 'apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup node-less'
+                                        sh 'pip install pip setuptools tox --upgrade'
+                                    }
+                                    stage("${image}-${env}:Build") {
+                                        echo 'Compile catalog and less'
+                                        sh 'python setup.py build'
+                                    }
+                                    stage("${image}-${env}:Test") {
+                                        try {
+                                            sh "tox --recreate --workdir /tmp --sitepackages -e ${env}"
+                                        } finally {
+                                            junit "nosetests-${env}.xml"
+                                            stash includes: "coverage-${env}.xml", name: 'coverage'
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }
-                    steps {
-                        sh 'apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup node-less'
-                        sh 'pip install pip setuptools tox --upgrade'
-                        sh """
-                            export TOXENV=`tox --listenvs | grep py27 | tr '\n' ','`
-                            tox --recreate --workdir /tmp --sitepackages
-                        """
-                    }
-                    post {
-                        success {
-                            junit "nosetests-*.xml"
-                            stash includes: 'coverage-*.xml', name: 'coverage'
-                        }
-                    }
-                }
-                stage('Test on Python3.4') {
-                    agent {
-                        docker {
-                            image 'ikus060/docker-debian-py2-py3:jessie'
-                        }
-                    }
-                    steps {
-                        sh 'apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup node-less'
-                        sh 'pip install pip setuptools tox --upgrade'
-                        sh """
-                            export TOXENV=`tox --listenvs | grep py27 | tr '\n' ','`
-                            tox --recreate --workdir /tmp --sitepackages
-                        """
-                    }
-                    post {
-                        success {
-                            junit "nosetests-*.xml"
-                            stash includes: 'coverage-*.xml', name: 'coverage'
-                        }
-                    }
+                    }}}
+                    
+                    parallel builders
                 }
             }
         }
