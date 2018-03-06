@@ -72,6 +72,18 @@ pipeline {
                 }
             }
         }
+		stage ('Build') {
+            agent {
+                docker {
+                    reuseNode true
+                    image 'ikus060/docker-debian-py2-py3:jessie'
+                }
+            }
+            steps {
+				sh 'pip install wheel --upgrade'
+                sh 'python setup.py sdist bdist_wheel'
+            }
+        }
         stage ('Release') {
             when {
                 environment name: 'Release', value: 'true'
@@ -87,7 +99,8 @@ pipeline {
                     version = sh(
                         script: 'python setup.py --version | tail -n1',
                         returnStdout: true
-                    ).trim().replaceFirst(".dev.*", ".${BUILD_NUMBER}")
+                    ).trim()
+                    version = version.replaceFirst(".dev.*", "+${BUILD_NUMBER}")
                 }
                 sh 'git checkout .'
                 // Change version.
@@ -105,18 +118,11 @@ pipeline {
                 addInfoBadge "v${version}"
             }
         }
-        stage('Upload') {
-            steps {
-                // Upload packages to kalo
-                sshagent (credentials: ['www-data-kalo']) {
-                    sh "scp -o StrictHostKeyChecking=no scp dist/*.tar.gz dist/*.whl www-data@kalo.patrikdufresne.com:/var/www/patrikdufresne/archive/rdiffweb"
-                }
-            }
-        }
         stage('Promote') {
             when {
                 environment name: 'Release', value: 'true'
                 environment name: 'Promote', value: 'true'
+                branch 'master'
             }
             agent {
                 docker {
