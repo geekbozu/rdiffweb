@@ -73,12 +73,14 @@ pipeline {
             }
         }
         stage ('Release') {
-            docker {
-                reuseNode true
-                image 'ikus060/docker-debian-py2-py3:jessie'
-            }
             when {
                 environment name: 'Release', value: 'true'
+            }
+            agent {
+                docker {
+                    reuseNode true
+                    image 'ikus060/docker-debian-py2-py3:jessie'
+                }
             }
             steps {
                 script {
@@ -112,13 +114,15 @@ pipeline {
             }
         }
         stage('Promote') {
-            docker {
-                reuseNode true
-                image 'ikus060/docker-debian-py2-py3:jessie'
-            }
             when {
                 environment name: 'Release', value: 'true'
                 environment name: 'Promote', value: 'true'
+            }
+            agent {
+                docker {
+                    reuseNode true
+                    image 'ikus060/docker-debian-py2-py3:jessie'
+                }
             }
             steps {
                 sh """cat > ~/.pypirc << EOF
