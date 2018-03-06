@@ -35,6 +35,8 @@ pipeline {
                         }
                     }
                     steps {
+                        sh 'apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup node-less'
+                        sh 'pip install pip setuptools tox --upgrade'
                         sh """
                             export TOXENV=`tox --listenvs | grep py27 | tr '\n' ','`
                             tox --recreate --workdir /tmp --sitepackages
@@ -54,6 +56,8 @@ pipeline {
                         }
                     }
                     steps {
+                        sh 'apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup node-less'
+                        sh 'pip install pip setuptools tox --upgrade'
                         sh """
                             export TOXENV=`tox --listenvs | grep py27 | tr '\n' ','`
                             tox --recreate --workdir /tmp --sitepackages
