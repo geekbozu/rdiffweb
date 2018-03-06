@@ -10,22 +10,11 @@ pipeline {
         booleanParam(defaultValue: false, description: 'Promote build for production.', name: 'Promote')
     }
     agent {
-        docker {
-            image 'ikus060/docker-debian-py2-py3:jessie'
+        node {
+          label 'docker'
         }
     }
     stages {
-        stage ('Setup') {
-            steps {
-                sh 'apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup node-less'
-                sh 'pip install pip setuptools tox --upgrade'
-            }
-        }
-        stage ('Build') {
-            steps {
-                sh 'python setup.py build'
-            }
-        }
         stage ('Parallel Test') {
             parallel {
                 stage('Test on Python2.7') {
