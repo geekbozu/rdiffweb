@@ -27,7 +27,6 @@ pipeline {
             }
         }
         stage ('Parallel Test') {
-        	agent none
             parallel {
                 stage('Test on Python2.7') {
                     agent {
