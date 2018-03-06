@@ -26,14 +26,53 @@ pipeline {
                 sh 'python setup.py build'
             }
         }
-        stage ('Test') {
-            steps {
-                sh "tox --recreate --workdir /tmp --sitepackages -e ${env}"
+        stage ('Parallel Test') {
+            parallel {
+                stage('Test on Python2.7') {
+                    agent {
+                        docker {
+                            image 'ikus060/docker-debian-py2-py3:jessie'
+                        }
+                    }
+                    steps {
+                        sh """
+                            export TOXENV=`tox --listenvs | grep py27 | tr '\n' ','`
+                            tox --recreate --workdir /tmp --sitepackages
+                        """
+                    }
+                    post {
+                        success {
+                            junit "nosetests-*.xml"
+                            stash includes: 'coverage-*.xml', name: 'coverage'
+                        }
+                    }
+                }
+                stage('Test on Python3.4') {
+                    agent {
+                        docker {
+                            image 'ikus060/docker-debian-py2-py3:jessie'
+                        }
+                    }
+                    steps {
+                        sh """
+                            export TOXENV=`tox --listenvs | grep py27 | tr '\n' ','`
+                            tox --recreate --workdir /tmp --sitepackages
+                        """
+                    }
+                    post {
+                        success {
+                            junit "nosetests-*.xml"
+                            stash includes: 'coverage-*.xml', name: 'coverage'
+                        }
+                    }
+                }
             }
-            post {
-                success {
-                    junit "nosetests-${env}.xml"
-                    step([$class: 'CoberturaPublisher', coberturaReportFile: "coverage-${env}.xml"])
+        }
+        stage ('Publish Coverage') {
+            steps {
+                unstach 'coverage'
+                script {
+                    step([$class: 'CoberturaPublisher', coberturaReportFile: "coverage-*.xml"])
                 }
             }
         }
@@ -53,6 +92,7 @@ pipeline {
                 sh """
                     sed -i.bak -r "s/version='(.*).dev.*'/version='${version}'/" setup.py
                 """
+                // Create Tag in git repo.
                 sh """
                     git config --local user.email "jenkins@patrikdufresne.com"
                     git config --local user.name "Jenkins"
