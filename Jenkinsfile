@@ -27,7 +27,7 @@ pipeline {
             }
         }
         stage ('Parallel Test') {
-            agent None
+            agent none
             steps {
                 script {
                 
