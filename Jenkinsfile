@@ -50,7 +50,9 @@ pipeline {
                 }
                 sh 'git checkout .'
                 // Change version.
-                sh "sed -i.bak -r "s/version='(.*).dev.*'/version='${version}'/" setup.py"
+                sh """
+                    sed -i.bak -r "s/version='(.*).dev.*'/version='${version}'/" setup.py
+                """
                 sh """
                     git config --local user.email "jenkins@patrikdufresne.com"
                     git config --local user.name "Jenkins"
