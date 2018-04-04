@@ -9,7 +9,7 @@ before_script:
 - apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup node-less
 - pip install pip setuptools --upgrade
 
-.tox:
+.tox: 
   stage: test
   script:
   - pip install tox nose coverage --upgrade
@@ -17,52 +17,76 @@ before_script:
 
 py27-cherrypy35: 
   <<: *tox
+  
 py27-cherrypy4: 
   <<: *tox
+  
 py27-cherrypy5: 
   <<: *tox
+  
 py27-cherrypy6: 
   <<: *tox
+  
 py27-cherrypy7: 
   <<: *tox
+  
 py27-cherrypy8: 
   <<: *tox
+  
 py27-cherrypy9: 
   <<: *tox
+  
 py27-cherrypy10: 
   <<: *tox
+  
 py27-cherrypy11: 
   <<: *tox
+  
 py27-cherrypy12: 
   <<: *tox
+  
 py27-cherrypy13:  
   <<: *tox
+  
 py27-cherrypy14: 
   <<: *tox
+  
 py3-cherrypy35: 
   <<: *tox
+  
 py3-cherrypy4: 
   <<: *tox
+  
 py3-cherrypy5: 
   <<: *tox
+  
 py3-cherrypy6: 
   <<: *tox
+  
 py3-cherrypy7: 
   <<: *tox
+  
 py3-cherrypy8: 
   <<: *tox
+  
 py3-cherrypy9: 
   <<: *tox
+  
 py3-cherrypy10: 
   <<: *tox
+  
 py3-cherrypy11: 
   <<: *tox
+  
 py3-cherrypy12: 
   <<: *tox
+  
 py3-cherrypy13: 
   <<: *tox
+  
 py3-cherrypy14: 
   <<: *tox
+  
 py27-cherrypy32: 
   <<: *tox
 
