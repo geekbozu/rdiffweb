@@ -9,7 +9,7 @@ before_script:
 - apt-get update && apt-get -qq install python-pysqlite2 libldap2-dev libsasl2-dev rdiff-backup node-less
 - pip install pip setuptools --upgrade
 
-.tox: 
+.tox:  &tox
   stage: test
   script:
   - pip install tox nose coverage --upgrade
