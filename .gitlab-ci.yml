@@ -15,6 +15,10 @@ before_script:
   script:
   - pip install tox nose coverage --upgrade
   - tox -e $CI_JOB_NAME --sitepackages
+  artifacts:
+    paths:
+    - .coverage.$CI_JOB_NAME
+    expire_in: 1 day
 
 py27-cherrypy35: 
   <<: *tox
