@@ -115,3 +115,23 @@ github_push:
   - git push --force https://${GITHUB_USR}:${GITHUB_PWD}@github.com/ikus060/rdiffweb.git refs/remotes/origin/${CI_COMMIT_REF_NAME}:refs/heads/${CI_COMMIT_REF_NAME}
   - git push https://${GITHUB_USR}:${GITHUB_PWD}@github.com/ikus060/rdiffweb.git --tags
   
+coverage:
+  stage: publish
+  script:
+  - coverage combine .coverage.*
+  - coverage html
+  coverage: '/TOTAL.*(\d+%)/'
+  artifacts:
+    paths:
+      - htmlcov/
+
+pages:
+  stage: publish
+  dependencies:
+    - coverage
+  script:
+    - mv htmlcov/ public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 15 days
