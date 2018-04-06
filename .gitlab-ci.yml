@@ -3,6 +3,7 @@ image: ikus060/docker-debian-py2-py3:stretch
 stages:
 - test
 - publish
+- pages
 
 # Upgrade python and install dependencies to avoid compiling from sources.
 before_script:
@@ -126,7 +127,7 @@ coverage:
       - htmlcov/
 
 pages:
-  stage: publish
+  stage: pages
   dependencies:
     - coverage
   script:
