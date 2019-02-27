@@ -18,8 +18,8 @@ prebuild-docker-image:
 .tox:  &tox
   stage: test
   script:
-  - pip install tox nose coverage --upgrade
-  - tox -e $CI_JOB_NAME --sitepackages
+  - pip install tox --upgrade
+  - tox -e $CI_JOB_NAME
   artifacts:
     paths:
     - .coverage.$CI_JOB_NAME

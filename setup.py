@@ -158,7 +158,7 @@ class build(build_):
 
 # Compute requirements
 install_requires = [
-    "CherryPy>=3.2.2",
+    "CherryPy>=3.2.2,<17" if PY2 else "CherryPy>=3.3.2",
     "Jinja2>=2.6,<=2.8.1",
     "future>=0.15.2",
     "psutil>=2.1.1",
