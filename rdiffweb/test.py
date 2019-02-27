@@ -37,8 +37,8 @@ import tarfile
 import tempfile
 import unittest
 
-from rdiffweb import rdw_config
 from rdiffweb.rdw_app import RdiffwebApp
+from rdiffweb.rdw_config import CONFIG_KEY
 
 try:
     from urllib.parse import urlencode  # @UnresolvedImport @UnusedImport
@@ -55,25 +55,25 @@ class MockRdiffwebApp(RdiffwebApp):
         self.default_config = default_config
 
         # Define config
-        cfg = rdw_config.Configuration()
         for plugin_name in self.enabled_plugins:
-            cfg.set_config('%sEnabled' % plugin_name, 'True')
+            default_config['%sEnabled' % plugin_name] = 'True'
 
         # database in memory
         if 'SQLite' in self.enabled_plugins:
             self.database_dir = tempfile.mkdtemp(prefix='rdiffweb_tests_db_')
-            cfg.set_config('SQLiteDBFile', os.path.join(self.database_dir, 'rdiffweb.tmp.db'))
+            default_config['SQLiteDBFile'] = os.path.join(self.database_dir, 'rdiffweb.tmp.db')
 
         if 'Ldap' in self.enabled_plugins:
-            cfg.set_config('LdapUri', '__default__')
-            cfg.set_config('LdapBaseDn', 'dc=nodomain')
-
-        # Set config
-        for key, val in list(self.default_config.items()):
-            cfg.set_config(key, val)
+            default_config['LdapUri'] = '__default__'
+            default_config['LdapBaseDn'] = 'dc=nodomain'
+            
+        # lower case everything
+        default_config = {k.lower():v for k, v in default_config.items()}
+        # Store config in cherrypy
+        cherrypy.config.update({CONFIG_KEY: default_config})
 
         # Call parent constructor
-        RdiffwebApp.__init__(self, cfg)
+        RdiffwebApp.__init__(self)
 
     def clear_db(self):
         if hasattr(self, 'database_dir'):

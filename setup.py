@@ -159,7 +159,7 @@ class build(build_):
 # Compute requirements
 install_requires = [
     "CherryPy>=3.2.2",
-    "Jinja2>=2.6,<=2.8.1",
+    "Jinja2>=2.6,!=2.9",
     "future>=0.15.2",
     "psutil>=2.1.1",
     "babel>=0.9.6",

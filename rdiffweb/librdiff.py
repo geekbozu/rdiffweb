@@ -51,7 +51,7 @@ import zlib
 from rdiffweb import rdw_helpers
 from rdiffweb.archiver import archive, ARCHIVERS
 from rdiffweb.i18n import ugettext as _
-from rdiffweb.rdw_config import Configuration
+from rdiffweb.rdw_config import read_config, write_config
 
 try:
     import subprocess32 as subprocess  # @UnresolvedImport @UnusedImport
@@ -977,8 +977,8 @@ class RdiffRepo(object):
             return
 
         # Read rdiffweb file as configuration file.
-        config = Configuration(self._hint_file)
-        name = config.get_config('encoding', default=FS_ENCODING)
+        config = read_config(self._hint_file)
+        name = config.get('encoding', FS_ENCODING)
         self._encoding = encodings.search_function(name.lower())
         if not self._encoding:
             self._encoding = encodings.search_function(FS_ENCODING)
@@ -1148,9 +1148,7 @@ class RdiffRepo(object):
             name = name.decode('ascii')
         # Need to update the 'rdiffweb' file
         logger.debug("writing hints for [%r]", self.full_path)
-        config = Configuration(self._hint_file)
-        config.set_config('encoding', name)
-        config.save()
+        write_config({'encoding': name}, self._hint_file)
         # Also update current encoding.
         self._encoding = encoding
 

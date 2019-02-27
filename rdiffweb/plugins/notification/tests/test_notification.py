@@ -33,6 +33,14 @@ from rdiffweb.test import AppTestCase
 class NotificationTest(AppTestCase):
 
     enabled_plugins = ['SQLite', 'EmailNotification']
+    
+    default_config = {
+        'EmailSendChangedNotification': 'true',
+        'EmailHost': 'smtp.gmail.com:587',
+        'EmailUsername': 'test@test.com',
+        'EmailPassword': 'test1234',
+        'EmailEncryption': 'starttls',
+    }
 
     USERNAME = 'admin'
 
@@ -91,12 +99,6 @@ class NotificationTest(AppTestCase):
             user = self.app.userdb.get_user(self.USERNAME)
             user.email = 'test@test.com'
 
-            # Set email config
-            self.app.cfg.set_config('EmailHost', 'smtp.gmail.com:587')
-            self.app.cfg.set_config('EmailUsername', 'test@test.com')
-            self.app.cfg.set_config('EmailPassword', 'test1234')
-            self.app.cfg.set_config('EmailEncryption', 'starttls')
-
             # Get ref to notification plugin
             n = self.app.plugins.get_plugin_by_name('NotificationPlugin')
             self.assertIsNotNone(n)
@@ -135,6 +137,7 @@ Here is the link you wanted."""
 
         # Expect it to be called.
         n.send_mail.assert_called_once_with(ANY, 'Email address changed', 'email_changed.html')
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

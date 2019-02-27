@@ -28,9 +28,9 @@ from threading import RLock
 
 from rdiffweb.core import InvalidUserError, RdiffError
 from rdiffweb.i18n import ugettext as _
+from rdiffweb.rdw_config import Option
 from rdiffweb.rdw_plugin import IPasswordStore, IDatabase
 from rdiffweb.user import UserObject
-
 
 try:
     # Python 2.5+
@@ -47,6 +47,8 @@ logger = logging.getLogger(__name__)
 
 class SQLiteUserDB(IPasswordStore, IDatabase):
 
+    _db_file = Option("SQLiteDBFile", "/etc/rdiffweb/rdw.db")
+
     def _bool(self, val):
         return str(val).lower() in ['true', '1']
 
@@ -60,8 +62,6 @@ class SQLiteUserDB(IPasswordStore, IDatabase):
         self.create_tables_lock = RLock()
 
         # Get database location.
-        self._db_file = self.app.cfg.get_config("SQLiteDBFile",
-                                                "/etc/rdiffweb/rdw.db")
         self._user_root_cache = {}
         self._create_or_update()
 
@@ -98,7 +98,7 @@ class SQLiteUserDB(IPasswordStore, IDatabase):
         assert isinstance(username, str)
         if not self.exists(username):
             raise InvalidUserError(username)
-        query = ("SELECT RepoPath FROM repos WHERE UserID = %d" %
+        query = ("SELECT RepoPath FROM repos WHERE UserID = %d" % 
                  self._get_user_id(username))
         return [row[0] for row in self._execute_query(query)]
 
@@ -176,7 +176,7 @@ class SQLiteUserDB(IPasswordStore, IDatabase):
             return False
         # Delete user
         logger.info("deleting user [%s]", username)
-        self._execute_query("DELETE FROM repos WHERE UserID=%d" %
+        self._execute_query("DELETE FROM repos WHERE UserID=%d" % 
                             self._get_user_id(username))
         self._execute_query("DELETE FROM users WHERE Username = ?",
                             (username,))

@@ -34,6 +34,7 @@ from rdiffweb import rdw_spider_repos, page_main, librdiff
 from rdiffweb.dispatch import poppath
 from rdiffweb.i18n import ugettext as _
 from rdiffweb.page_main import MainPage
+from rdiffweb.rdw_config import Option
 from rdiffweb.rdw_plugin import IPreferencesPanelProvider, ITemplateFilterPlugin, JobPlugin
 
 _logger = logging.getLogger(__name__)
@@ -89,9 +90,7 @@ class RemoveOlderPlugin(ITemplateFilterPlugin, JobPlugin):
             r = self.app.currentuser.get_repo(data['repo_path'])
             data["keepdays"] = int(r.get_attr(KEEPDAYS, default='-1'))
 
-    @property
-    def job_execution_time(self):
-        return self.app.cfg.get_config('RemoveOlderTime', '23:00')
+    job_execution_time = Option('RemoveOlderTime', '23:00')
 
     def job_run(self):
         """

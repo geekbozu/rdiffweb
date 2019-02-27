@@ -25,9 +25,9 @@ import logging
 
 from rdiffweb.core import Component, InvalidUserError, RdiffError
 from rdiffweb.i18n import ugettext as _
-from rdiffweb.rdw_plugin import IPasswordStore, IDatabase, IUserChangeListener
 from rdiffweb.page_main import normpath
-
+from rdiffweb.rdw_config import BoolOption
+from rdiffweb.rdw_plugin import IPasswordStore, IDatabase, IUserChangeListener
 
 # Define the logger
 logger = logging.getLogger(__name__)
@@ -143,12 +143,10 @@ class UserManager(Component):
     TRAC account manager class.
     """
 
+    _allow_add_user = BoolOption("AddMissingUser", False)
+
     def __init__(self, app):
         Component.__init__(self, app)
-
-    @property
-    def _allow_add_user(self):
-        return self.app.cfg.get_config_bool("AddMissingUser", "false")
 
     @property
     def _databases(self):

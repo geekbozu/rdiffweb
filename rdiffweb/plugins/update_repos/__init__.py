@@ -30,9 +30,9 @@ import logging
 import os
 
 from rdiffweb.i18n import ugettext as _
+from rdiffweb.rdw_config import Option, IntOption
 from rdiffweb.rdw_plugin import IDeamonPlugin
 from rdiffweb.rdw_spider_repos import find_repos_for_user
-
 
 _logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class UpdateReposPlugin(IDeamonPlugin):
         """
         Return the frequency to update user repo. Default to 15min.
         """
-        value = self.app.cfg.get_config_bool("autoUpdateRepos", "15")
+        value = IntOption("autoUpdateRepos", 15).get()
         if value <= 0:
             value = 15
         return value * 60

@@ -47,6 +47,7 @@ from rdiffweb.page_status import StatusPage
 from rdiffweb.user import UserManager
 from rdiffweb.page_main import MainPage  # @UnusedImport
 from rdiffweb.librdiff import DoesNotExistError, AccessDeniedError
+from rdiffweb.rdw_config import Option
 
 # Define the logger
 logger = logging.getLogger(__name__)
@@ -55,6 +56,10 @@ PY3 = sys.version_info[0] == 3
 
 
 class Root(LocationsPage):
+
+    _favicon = Option("Favicon", pkg_resources.resource_filename('rdiffweb', 'static/favicon.ico'))  # @UndefinedVariable
+
+    _header_logo = Option("HeaderLogo")
 
     def __init__(self, app):
         LocationsPage.__init__(self, app)
@@ -72,14 +77,11 @@ class Root(LocationsPage):
         self.static = static(static_dir)
 
         # Register favicon.ico
-        default_favicon = pkg_resources.resource_filename('rdiffweb', 'static/favicon.ico')  # @UndefinedVariable
-        favicon = app.cfg.get_config("Favicon", default_favicon)
-        self.favicon_ico = static(favicon)
+        self.favicon_ico = static(self._favicon)
 
         # Register header_logo
-        header_logo = app.cfg.get_config("HeaderLogo")
-        if header_logo:
-            self.header_logo = static(header_logo)
+        if self._header_logo:
+            self.header_logo = static(self._header_logo)
 
         # Register robots.txt
         robots_txt = pkg_resources.resource_filename('rdiffweb', 'static/robots.txt')  # @UndefinedVariable
@@ -89,22 +91,23 @@ class Root(LocationsPage):
 class RdiffwebApp(Application):
     """This class represent the application context."""
 
-    def __init__(self, cfg):
+    tempdir = Option("TempDir", default="")
 
-        # Initialise the configuration
-        assert cfg
-        self.cfg = cfg
-        
+    session_storage = Option("SessionStorage")
+
+    session_dir = Option("SessionDir")
+
+    def __init__(self):
+
         # Define TEMP env
-        tempdir = self.cfg.get_config("TempDir", default="")
-        if tempdir:
-            os.environ["TMPDIR"] = tempdir
+        if self.tempdir:
+            os.environ["TMPDIR"] = self.tempdir
 
         # Initialise the template engine.
         self.templates = rdw_templating.TemplateManager()
 
         # Initialise the plugins
-        self.plugins = rdw_plugin.PluginManager(self.cfg)
+        self.plugins = rdw_plugin.PluginManager()
 
         # Initialise the application
         config = {
@@ -215,21 +218,19 @@ class RdiffwebApp(Application):
 
     def _setup_session_storage(self, config):
         # Configure session storage.
-        session_storage = self.cfg.get_config("SessionStorage")
-        session_dir = self.cfg.get_config("SessionDir")
-        if session_storage.lower() != "disk":
+        if self.session_storage.lower() != "disk":
             return
 
-        if (not os.path.exists(session_dir) or
-                not os.path.isdir(session_dir) or
-                not os.access(session_dir, os.W_OK)):
+        if (not os.path.exists(self.session_dir) or
+                not os.path.isdir(self.session_dir) or
+                not os.access(self.session_dir, os.W_OK)):
             return
 
-        logger.info("Setting session mode to disk in directory %s", session_dir)
+        logger.info("Setting session mode to disk in directory %s", self.session_dir)
         config.update({
             'tools.sessions.on': True,
             'tools.sessions.storage_type': True,
-            'tools.sessions.storage_path': session_dir,
+            'tools.sessions.storage_path': self.session_dir,
         })
 
     def _start_deamons(self):

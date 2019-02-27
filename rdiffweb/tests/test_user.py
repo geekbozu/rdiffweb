@@ -32,6 +32,7 @@ from mockldap import MockLdap
 import unittest
 
 from rdiffweb.core import InvalidUserError, RdiffError
+from rdiffweb.rdw_config import Option
 from rdiffweb.rdw_plugin import IUserChangeListener
 from rdiffweb.test import AppTestCase
 
@@ -382,7 +383,7 @@ class UserManagerSQLiteLdapTest(AppTestCase):
     def test_login_with_create_user(self):
         """Check if login create the user in database if user exists in LDAP"""
         self.assertFalse(self.app.userdb.exists('tony'))
-        self.app.cfg.set_config('AddMissingUser', 'true')
+        Option('AddMissingUser').set('true')
         try:
             user = self.app.userdb.login('tony', 'password')
             self.assertTrue(self.app.userdb.exists('tony'))

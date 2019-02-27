@@ -23,13 +23,13 @@ import cherrypy
 from future.builtins import str
 import getopt
 import logging
-import os
 import sys
 import tempfile
 import threading
 import traceback
 
-from rdiffweb import rdw_app, rdw_config
+from rdiffweb import rdw_app
+from rdiffweb.rdw_config import Option, IntOption, load_config
 from rdiffweb.rdw_profiler import ProfilingApplication
 
 # Define logger for this module
@@ -170,20 +170,17 @@ def start():
 
     # Open config file before opening the apps.
     configfile = args.get('config', '/etc/rdiffweb/rdw.conf')
-    if not os.path.isfile(configfile):
-        print("configuration file %s doesn't exists" % configfile, file=sys.stderr)
-        exit(1)
-    cfg = rdw_config.Configuration(configfile)
-    log_file = args.get('log_file', None) or cfg.get_config('LogFile', False)
-    log_access_file = args.get('log_access_file', None) or cfg.get_config('LogAccessFile', None)
+    load_config(configfile)
+    
+    # Configure logging
+    log_file = args.get('log_file', None) or Option('LogFile', False).get()
+    log_access_file = args.get('log_access_file', None) or Option('LogAccessFile', None).get()
     if args.get('debug', False):
         environment = 'development'
         log_level = "DEBUG"
     else:
-        environment = cfg.get_config('Environment', 'production')
-        log_level = cfg.get_config('LogLevel', 'INFO')
-
-    # Configure logging
+        environment = Option('Environment', default='production').get()
+        log_level = Option('LogLevel', default='INFO').get()
     setup_logging(
         log_file=log_file,
         log_access_file=log_access_file,
@@ -193,15 +190,14 @@ def start():
     logger.info("START")
 
     # Create App.
-    app = rdw_app.RdiffwebApp(cfg)
+    app = rdw_app.RdiffwebApp()
 
     # Get configuration
-    serverHost = app.cfg.get_config("ServerHost", default=b"0.0.0.0")
-    serverPort = app.cfg.get_config_int("ServerPort", default="8080")
+    serverHost = Option("ServerHost", default=b"0.0.0.0").get()
+    serverPort = IntOption("ServerPort", default=8080).get()
     # Get SSL configuration (if any)
-    sslCertificate = app.cfg.get_config("SslCertificate")
-    sslPrivateKey = app.cfg.get_config("SslPrivateKey")
-
+    sslCertificate = Option("SslCertificate").get()
+    sslPrivateKey = Option("SslPrivateKey").get()
     global_config = cherrypy._cpconfig.environments.get(environment, {})
     global_config.update({
         'server.socket_host': serverHost,

@@ -31,6 +31,7 @@ from rdiffweb.i18n import ugettext as _
 from rdiffweb.page_main import MainPage
 from rdiffweb.rdw_helpers import quote_url
 import base64
+from rdiffweb.rdw_config import Option
 
 # Define the logger
 logger = logging.getLogger(__name__)
@@ -167,10 +168,10 @@ class AuthFormTool(BaseAuth):
         }
 
         # Add welcome message to params. Try to load translated message.
-        params["welcome_msg"] = app.cfg.get_config("WelcomeMsg")
+        params["welcome_msg"] = Option("WelcomeMsg").get()
         if hasattr(cherrypy.response, 'i18n'):
             lang = cherrypy.response.i18n.locale.language
-            params["welcome_msg"] = app.cfg.get_config("WelcomeMsg[%s]" % (lang), params["welcome_msg"])
+            params["welcome_msg"] = Option("WelcomeMsg[%s]" % (lang), params["welcome_msg"]).get()
 
         return main_page._compile_template("login.html", **params).encode("utf-8")
 

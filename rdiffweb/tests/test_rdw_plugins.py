@@ -28,7 +28,7 @@ from mock.mock import Mock, MagicMock
 import unittest
 
 from rdiffweb import rdw_plugin
-from rdiffweb.rdw_config import Configuration
+from rdiffweb.rdw_config import Option
 from rdiffweb.rdw_plugin import PluginManager, JobPlugin
 
 
@@ -39,9 +39,8 @@ class PluginManagerTest(unittest.TestCase):
         Check plugin information.
         """
         # Enable a single plugin.
-        config = Configuration()
-        config.set_config('SQLiteEnabled', 'true')
-        plugins = PluginManager(config)
+        Option('SQLiteEnabled').set('true')
+        plugins = PluginManager()
         infos = plugins.get_plugin_infos()
         # Check result.
         self.assertTrue(len(infos) > 0)

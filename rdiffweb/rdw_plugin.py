@@ -34,6 +34,7 @@ import sys
 import time
 
 from rdiffweb.dispatch import static
+from rdiffweb.rdw_config import Option, BoolOption
 
 # Define logger for this module
 logger = logging.getLogger(__name__)
@@ -45,12 +46,12 @@ PluginInfo = namedtuple(
 
 class PluginManager(object):
 
-    def __init__(self, cfg):
+    _search_path = Option("PluginSearchPath", default="/etc/rdiffweb/plugins")
+
+    def __init__(self):
         """
         Initialise the plugin system.
         """
-        assert cfg
-        self.cfg = cfg
         self._categories = {}
         self._names = {}
         self._plugin_infos = []
@@ -63,10 +64,7 @@ class PluginManager(object):
         Determine the search path to look for plugins.
         """
         # Load plugins from config
-        search_path = self.cfg.get_config(
-            "PluginSearchPath",
-            default="/etc/rdiffweb/plugins")
-        return [os.path.normpath(p) for p in search_path.split(',')]
+        return [os.path.normpath(p) for p in self._search_path.split(',')]
 
     def _load_plugins(self):
         """
@@ -221,9 +219,7 @@ class PluginManager(object):
         assert isinstance(module_name, str)
         # Check if the plugin is enabled in config file.
         try:
-            return self.cfg.get_config_bool(
-                "%sEnabled" % (module_name,),
-                default="False")
+            return BoolOption("%sEnabled" % (module_name,), default=False).get()
         except:
             return False
 

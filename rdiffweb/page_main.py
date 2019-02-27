@@ -26,12 +26,11 @@ import logging
 
 from rdiffweb.core import Component
 from rdiffweb.librdiff import RdiffRepo, DoesNotExistError
+from rdiffweb.rdw_config import Option
 from rdiffweb.rdw_plugin import ITemplateFilterPlugin
-
 
 # Define the logger
 logger = logging.getLogger(__name__)
-
 
 SEP = b'/'
 
@@ -138,7 +137,7 @@ class MainPage(Component):
         # Append custom branding
         if hasattr(self.app.root, "header_logo"):
             parms["header_logo"] = '/header_logo'
-        header_name = self.app.cfg.get_config("HeaderName")
+        header_name = Option("HeaderName").get()
         if header_name:
             parms["header_name"] = header_name
 
