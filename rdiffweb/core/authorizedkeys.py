@@ -16,25 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import unicode_literals
-from builtins import str
-from builtins import zip
-from future.utils import python_2_unicode_compatible
-
-import base64
-import hashlib
-import logging
-import re
-import os
-
-from collections import namedtuple, OrderedDict
-import stat
-
 """
 Created on May 12, 2015
 
 @author: patrik dufresne
 """
+
+from __future__ import unicode_literals
+
+import base64
+from collections import namedtuple, OrderedDict
+import hashlib
+from io import open
+import logging
+import os
+import re
+import stat
+import tempfile
+
+from builtins import str
+from builtins import zip
+from future.utils import python_2_unicode_compatible
 
 _logger = logging.getLogger(__name__)
 
@@ -49,7 +51,7 @@ PATTERN_SPACES = re.compile(r'\s+')
 
 
 @python_2_unicode_compatible
-class KeySplit(namedtuple('KeySplit', 'lineno options keytype key comment')):
+class KeySplit(namedtuple('KeySplit', 'options keytype key comment')):
     """
     The `key`field contains the ssh key. e.g.: ssh-rsa ...
     The `options` contains a dict() of options.
@@ -97,18 +99,28 @@ class KeySplit(namedtuple('KeySplit', 'lineno options keytype key comment')):
         return rsakey.size() + 1
 
 
-def add(filename, key):
+def add(fn, key):
     """
     Add a key to an `authorized_keys` file.
     """
-    # Create file if missing.
-    if not os.path.isfile(filename):
-        create_file(filename)
-
-    # Add key to file.
-    with open(filename, "a+") as f:
-        f.write(str(key))
-        f.write('\n')
+    # Support file obj or filename
+    if hasattr(fn, 'read'):
+        fh = fn
+        fh.seek(0, 2)
+        close_fh = False
+    else:
+        # Create file if missing.
+        if not os.path.isfile(fn):
+            create_file(fn)
+        fh = open(fn, mode='a+', encoding='utf-8')
+        close_fh = True
+    try:
+        # Add key to file.
+        fh.write(str(key))
+        fh.write('\n')
+    finally:
+        if close_fh:
+            fh.close()
 
 
 def check_publickey(data):
@@ -125,7 +137,7 @@ def check_publickey(data):
     # Try to parse the data
     m = PATTERN_LINE.match(data)
     if m:
-        key = KeySplit(lineno=False, options=False, keytype=m.group(2), key=m.group(3), comment=m.group(4))
+        key = KeySplit(options=False, keytype=m.group(2), key=m.group(3), comment=m.group(4))
         return key
     raise ValueError("invalid public key")
 
@@ -156,28 +168,41 @@ def create_file(filename):
         os.chown(filename, val.st_uid, val.st_gid)
 
 
-def exists(filename, key):
+def exists(fn, key):
     """
     Check if the given key already exists in the file.
     Return True if the `key` exists in the file. Otherwise return False --
     when the file can't be read this method won't raise an exception.
     """
-    # Check if file can be read.
-    if not os.access(filename, os.R_OK):
-        return False
-    # Read the keys.
     try:
-        keys = read(filename)
+        keys = read(fn)
     except IOError:
         return False
     for k in keys:
-        if (k.keytype == key.keytype and
-                k.key == key.key):
+        if k.keytype == key.keytype and k.key == key.key:
             return True
     return False
 
 
-def parse_options(value):
+def _parse_line(line):
+    """
+    Return None if the line is not a valid ssh key.
+    Otherwise return the Key object.
+    """
+    # Skip comments
+    if len(line.strip()) == 0 or line.strip().startswith('#'):
+        return None
+    # Try to parse the line using regex.
+    m = PATTERN_LINE.match(line)
+    # Print warning if a line is invalid.
+    if not m:
+        _logger.warning("invalid authorised_key line: %s", line)
+        return None
+    options = _parse_options(m.group(1))
+    return KeySplit(options, m.group(2), m.group(3), m.group(4))
+
+
+def _parse_options(value):
     """
     Parse the options part using regex. Return a dict().
     """
@@ -207,10 +232,10 @@ def parse_options(value):
     return options
 
 
-def read(filename):
+def read(fn):
     """
     Read an authorized_keys file.
-    The `filename` must define a filename path.
+    The `fn` must define a filename path or a file obj.
     Return a named tuple to represent each line of the file.
     Parse the line as follow:
 
@@ -219,39 +244,73 @@ def read(filename):
     See https://github.com/grawity/code/blob/master/lib/python/nullroute/authorized_keys.py
     See http://www.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man8/sshd.8?query=sshd
     """
-    if not os.path.isfile(filename):
-        return []
-    # Open the file
-    with open(filename, "r") as f:
-
+    # Support file handler and filename.
+    if hasattr(fn, 'read'):
+        fh = fn
+        close_fh = False
+    else:
+        fh = open(fn, mode='r', encoding='utf-8')
+        close_fh = True
+    try:
         # Read file line by line.
-        keys = list()
-        for lineno, line in enumerate(f, start=1):
-            # Skip comments
-            if len(line.strip()) == 0 or line.strip().startswith('#'):
-                continue
-            # Try to parse the line using regex.
-            m = PATTERN_LINE.match(line)
-            # Print warning is a line is invalide.
-            if not m:
-                _logger.warning("invalid authorised_key line: %s", line)
-                continue
-            options = parse_options(m.group(1))
-            keys.append(KeySplit(lineno, options, m.group(2), m.group(3), m.group(4)))
-        return keys
+        for line in fh:
+            key = _parse_line(line)
+            if key:
+                yield key
+            
+    finally:
+        # Need to close the file if we open it.
+        if close_fh:
+            fh.close()
 
 
-def remove(filename, keylineno):
+def remove(fn, fingerprint):
     """
     Remove a key from the authorised_key.
 
-    The `keylineno` represent the line number to be removed.
+    The `fingerprint` represent the finger print of the ssh key to be removed.
+    
+    Throw a ValueError if the given finger print can't be found.
     """
-    # Copy file to temp
-    with open(filename, "r") as f:
-        lines = f.readlines()
-    with open(filename, "w") as f:
-        for lineno, line in enumerate(lines, start=1):
-            if lineno == keylineno:
-                continue
-            f.write(line)
+    assert fingerprint
+    fingerprint = str(fingerprint)
+    
+    encoding = 'utf-8'
+    if hasattr(fn, 'read'):
+        fh = fn
+        close_fh = False
+    else:
+        fh = open(fn, mode='r+', encoding=encoding)
+        close_fh = True
+    removed = False
+    try:
+        # Copy content to a temp file while removing the line.
+        temp = tempfile.TemporaryFile(mode='w+b')
+        for line in fh:
+            try:
+                key = _parse_line(line)
+                # If the key matches our fingerprint, to not copy the line.
+                if key and key.fingerprint == fingerprint:
+                    removed = True
+                else:
+                    temp.write(line.encode(encoding))
+            except:
+                # Not a valid key, so just copy the line.
+                temp.write(line.encode(encoding))
+            
+        if not removed:
+            raise ValueError(fingerprint + ' not found')
+
+        # Copy the temp file into the original
+        temp.seek(0)
+        fh.seek(0)
+        fh.truncate()
+        
+        # Read the temp file line by line and write it back to the original file.        
+        for line in temp:
+            fh.write(line.decode('utf-8'))
+        
+    finally:
+        temp.close()
+        if close_fh:
+            fh.close()            
