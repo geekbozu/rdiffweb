@@ -22,7 +22,7 @@ from builtins import bytes
 from builtins import object
 from builtins import str
 from collections import namedtuple
-import datetime
+from datetime import datetime, timedelta
 from glob import glob
 import imp
 import inspect
@@ -471,7 +471,7 @@ class JobPlugin(IDeamonPlugin):
         """
         Sleep until time to execute the job.
         """
-        now = datetime.datetime.now()
+        now = datetime.now()
         t = self._get_next_execution_time()
         time.sleep((t - now).seconds)
 
@@ -481,15 +481,15 @@ class JobPlugin(IDeamonPlugin):
         """
         try:
             time_str = self.job_execution_time
-            exec_time = datetime.datetime.strptime(time_str, '%H:%M')
+            exec_time = datetime.strptime(time_str, '%H:%M')
         except:
             logger.error("invalid execution time [%s], check your config. Using default value.", self.job_execution_time)
-            exec_time = datetime.datetime.strptime("23:00", '%H:%M')
+            exec_time = datetime.strptime("23:00", '%H:%M')
 
-        now = datetime.datetime.now()
+        now = datetime.now()
         exec_time = now.replace(hour=exec_time.hour, minute=exec_time.minute, second=0, microsecond=0)
         if exec_time < now:
-            exec_time = exec_time + datetime.timedelta(days=1)
+            exec_time = exec_time + timedelta(days=1)
         return exec_time
 
 
