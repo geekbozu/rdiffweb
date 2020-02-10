@@ -191,6 +191,19 @@ py3-sid-cherrypy8-jinja210:
   variables:
     TOXENV: py3-cherrypy8-jinja210
 
+py3-rdiff-backup2:
+  <<: *tox
+  image: ikus060/docker-debian-py2-py3:sid
+  variables:
+    TOXENV: py3-cherrypy8-jinja210
+  before_script:
+  - export APT_CACHE_DIR=`pwd`/apt-cache && mkdir -pv $APT_CACHE_DIR
+  - export PIP_CACHE_DIR=`pwd`/pip-cache && mkdir -pv $PIP_CACHE_DIR && mkdir ~/.pip && printf "[global]\ndownload_cache = $PIP_CACHE_DIR\n" >> ~/.pip/pip.conf
+  - apt -y update && apt -y -o dir::cache::archives="$APT_CACHE_DIR" install libldap2-dev libsasl2-dev node-less
+  - wget https://github.com/rdiff-backup/rdiff-backup/releases/download/v1.9.0b0/rdiff-backup_1.4.0b1_amd64.deb
+  - apt install ./rdiff-backup_1.4.0b1_amd64.deb
+  - pip3 install setuptools virtualenv nose coverage tox --upgrade
+
 package:py2: 
   stage: package
   script:
